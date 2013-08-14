@@ -75,9 +75,9 @@ def install_drivers_osx():
 
 def install_drivers_windows():
         if platform.architecture()[0] == "32bit":
-                os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw")
+                return os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw")
         else:
-                os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
+                return os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
 
 def fix_permissions_linux():
 	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
@@ -90,7 +90,10 @@ def install_drivers(websocket):
 		else:
 			websocket.sendMessage(json.dumps({"type":"installation_output", "success":False, "error":return_val}))
 	elif platform.system() == "Windows":
-                install_drivers_windows()
+		if(return_val == 256):
+			websocket.sendMessage(json.dumps({"type":"installation_output", "success":True}))
+		else:
+			websocket.sendMessage(json.dumps({"type":"installation_output", "success":False, "error":return_val}))
 	elif platform.system() == "Linux":
 		fix_permissions_linux()
 
