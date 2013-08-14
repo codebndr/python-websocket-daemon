@@ -82,6 +82,7 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	print "Flashing: ", bash_shell
 	process = subprocess.Popen(bash_shell.split())
 	print "FLASHING!!!"
+	#ToDo: Delete the temp file after it's done
 	
 def check_ports_posix():
 	list = list_ports.comports()
