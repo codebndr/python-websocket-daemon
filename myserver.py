@@ -27,8 +27,7 @@ import platform
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
 def install_drivers():
-	os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg /Users/iluvatar/Documents/Projects/codebender/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")
-	
+	os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
 
 def do_install_drivers():
 	# Create a thread as follows
