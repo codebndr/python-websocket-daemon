@@ -26,8 +26,12 @@ import platform
 
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
-def install_drivers():
+def install_drivers_osx():
 	os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
+
+def install_drivers():
+	if platform.system() == "Darwin":
+		install_drivers_osx()
 
 def do_install_drivers():
 	# Create a thread as follows
