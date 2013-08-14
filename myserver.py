@@ -61,8 +61,7 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	process = subprocess.Popen(bash_shell.split())
 	print "FLASHING!!!"
 	
-
-def check_ports():
+def check_ports_posix():
 	list = list_ports.comports()
 
 	ports = []
@@ -70,6 +69,38 @@ def check_ports():
 		if(port[0].startswith("/dev/tty.")):
 			ports.append(port[0])
 	return ports
+
+try:
+	import _winreg as winreg
+	import itertools
+except ImportError:
+	pass
+
+def check_ports_windows():
+        """ Uses the Win32 registry to return an
+        iterator of serial (COM) ports
+        existing on this computer.
+        """
+        path = 'HARDWARE\\DEVICEMAP\\SERIALCOMM'
+        try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path)
+        except WindowsError:
+                raise IterationError
+
+        ports = []
+        for i in itertools.count():
+                try:
+                        val = winreg.EnumValue(key, i)
+                        ports.append(str(val[1]))
+                except EnvironmentError:
+                        break
+        return ports
+
+def check_ports():
+        if platform.system() == "Windows":
+                return check_ports_windows()
+        else:
+                return check_ports_posix()
 
 def update_ports(websocket):
 	print "Starting check for ports"
@@ -99,6 +130,8 @@ class EchoServerProtocol(WebSocketServerProtocol):
 		if message["type"] == "version":
 			self.sendMessage(json.dumps({"type":"version", "version":"0.1"}) ,binary)
 		elif message["type"] == "flash":
+			if platform.system() == "Windows":
+                                message["prt"] = '\\\\.\\' + message["prt"]
 			flash_arduino(message["cpu"], message["ptc"], message["prt"], message["bad"], message["binary"])
 		elif message["type"] == "message":
 			print message["text"]
