@@ -158,12 +158,20 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	bash_shell_prt = " -P" + prt
 	bash_shell_bad = " -b" + bad
 	binary = base64.b64decode(binary)
-	bin_file = tempfile.NamedTemporaryFile()
+	if platform.system() == "Windows":
+                bin_file = tempfile.NamedTemporaryFile(delete=False)
+        else:
+                bin_file = tempfile.NamedTemporaryFile()
 	print "file name: ", bin_file.name
+	logging.info("temp filename: %s\n", bin_file.name)
 	bin_file.write(binary)
+	if platform.system() == "Windows":
+                bin_file.close()
 	bash_shell_file = " -Uflash:w:" + bin_file.name + ":i"
 	bash_shell = bash_shell_cmd + bash_shell_cnf + " -v -v -v -v" + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
 	print "Flashing: ", bash_shell
+	logging.info("Flashing cmd:")
+	logging.info(bash_shell)
 	process = subprocess.Popen(bash_shell.split())
 	print "FLASHING!!!"
 	#ToDo: Delete the temp file after it's done
