@@ -26,7 +26,7 @@ import platform
 
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
-def check_ports():
+def check_ports_posix():
 	list = list_ports.comports()
 
 	ports = []
@@ -34,6 +34,35 @@ def check_ports():
 		if(port[0].startswith("/dev/tty.")):
 			ports.append(port[0])
 	return ports
+
+import _winreg as winreg
+import itertools
+
+def check_ports_windows():
+        """ Uses the Win32 registry to return an
+        iterator of serial (COM) ports
+        existing on this computer.
+        """
+        path = 'HARDWARE\\DEVICEMAP\\SERIALCOMM'
+        try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path)
+        except WindowsError:
+                raise IterationError
+
+        ports = []
+        for i in itertools.count():
+                try:
+                        val = winreg.EnumValue(key, i)
+                        ports.append(str(val[1]))
+                except EnvironmentError:
+                        break
+        return ports
+
+def check_ports():
+        if platform.system() == "Windows":
+                return check_ports_windows()
+        else:
+                return check_ports_posix()
 
 def update_ports(websocket):
 	old_ports = []
@@ -60,6 +89,8 @@ class EchoServerProtocol(WebSocketServerProtocol):
 			bash_shell_cnf = " -C./avrdudes/" + platform.system() + "/avrdude.conf"
 			bash_shell_cpu = " -p" + message["cpu"]
 			bash_shell_ptc = " -c" + message["ptc"]
+			if platform.system() == "Windows":
+                                message["prt"] = '\\\\.\\' + message["prt"]
 			bash_shell_prt = " -P" + message["prt"]
 			bash_shell_bad = " -b" + message["bad"]
 			binary = base64.b64decode(message["binary"])
