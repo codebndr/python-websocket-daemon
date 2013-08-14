@@ -444,7 +444,7 @@ import win32event
 import win32evtlogutil
 import os
 
-import win32traceutil
+#import win32traceutil
 
 def main(self):
       #initializing serial flashing etc utilities socket
@@ -476,9 +476,13 @@ class aservice(win32serviceutil.ServiceFramework):
            win32event.SetEvent(self.hWaitStop)                    
          
    def SvcDoRun(self):
+      import win32traceutil
+      logging.basicConfig(filename='app.log', level=logging.INFO)
       logging.info("running daemon")
       import servicemanager      
-      servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,servicemanager.PYS_SERVICE_STARTED,(self._svc_name_, '')) 
+      servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,servicemanager.PYS_SERVICE_STARTED,(self._svc_name_, ''))
+
+      servicemanager.LogInfoMsg(os.getcwd())
 
       #TODO: Move this to threading model and start/stop the thread only when we have registered clients
       # Create a thread as follows
