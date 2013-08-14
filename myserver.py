@@ -40,12 +40,15 @@ def do_install_drivers():
 	except:
 		print "Error: unable to start thread"
 	
-def check_drivers(websocket):
+def check_drivers_osx(websocket):
 	if(os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.FTDIUSBSerialDriver-2.pkg.bom") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.FTDIUSBSerialDriver-2.pkg.plist") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.postflight.pkg.bom") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.postflight.pkg.plist") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.preflight.pkg.bom")):
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
 	else:
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
 
+def check_drivers(websocket):
+	if platform.system() == "Darwin":
+		check_drivers_osx(websocket)
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
 	bash_shell_cmd = "./avrdudes/" + platform.system() + "/avrdude"
