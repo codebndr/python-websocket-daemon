@@ -91,6 +91,7 @@ def install_drivers(websocket):
 		else:
 			websocket.sendMessage(json.dumps({"type":"installation_output", "success":False, "error":return_val}))
 	elif platform.system() == "Windows":
+		return_val = install_drivers_windows()
 		if(return_val == 256):
 			websocket.sendMessage(json.dumps({"type":"installation_output", "success":True}))
 		else:
