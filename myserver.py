@@ -7,9 +7,13 @@ from serial.tools import list_ports
 
 import thread
 
+#needed for py2exe
+import zope.interface
 from twisted.internet import reactor
 from twisted.python import log
 
+#needed for py2exe
+import autobahn.resource
 from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
 
 import json
