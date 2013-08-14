@@ -129,8 +129,11 @@ def check_ports_windows():
         path = 'HARDWARE\\DEVICEMAP\\SERIALCOMM'
         try:
                 key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path)
-        except WindowsError:
-                raise IterationError
+        except WindowsError, e:
+                if e.errno == 2:
+                        return []
+                else:
+                        raise e
 
         ports = []
         for i in itertools.count():
