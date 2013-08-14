@@ -54,9 +54,17 @@ def check_drivers_osx(websocket):
 	else:
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
 
+def check_drivers_windows(websocket):
+	if(os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_neutral_f13cf06b4049adb5/arduino.inf")):
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
+	else:
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+
 def check_drivers(websocket):
 	if platform.system() == "Darwin":
 		check_drivers_osx(websocket)
+	elif platform.system() == "Windows":
+		check_drivers_windows(websocket)
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
 	bash_shell_cmd = "./avrdudes/" + platform.system() + "/avrdude"
