@@ -31,9 +31,9 @@ def install_drivers_osx():
 
 def install_drivers_windows():
         if platform.architecture()[0] == "32bit":
-                os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe")
+                os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw")
         else:
-                os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe")
+                os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
 
 def install_drivers():
 	if platform.system() == "Darwin":
