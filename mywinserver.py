@@ -446,7 +446,7 @@ import os
 
 #import win32traceutil
 
-def main(self):
+def main():
       #initializing serial flashing etc utilities socket
       ServerFactory = BroadcastServerFactory
 
@@ -460,6 +460,25 @@ def main(self):
       listenWS(factory2)
 
       reactor.run()
+
+import servicemanager      
+
+def checkForStop(self):
+        
+      self.timeout = 3000
+
+      while 1:
+         # Wait for service stop signal, if I timeout, loop again
+         rc = win32event.WaitForSingleObject(self.hWaitStop, self.timeout)
+         # Check to see if self.hWaitStop happened
+         if rc == win32event.WAIT_OBJECT_0:
+            # Stop signal encountered
+            servicemanager.LogInfoMsg("codebender - STOPPED")
+            #TODO: Improve this. Windows consider it an error right now
+            os._exit(0)
+         else:
+            servicemanager.LogInfoMsg("codebender - is alive and well")   
+
 
 class aservice(win32serviceutil.ServiceFramework):
    
@@ -476,10 +495,9 @@ class aservice(win32serviceutil.ServiceFramework):
            win32event.SetEvent(self.hWaitStop)                    
          
    def SvcDoRun(self):
-      import win32traceutil
-      logging.basicConfig(filename='app.log', level=logging.INFO)
+      #import win32traceutil
+      #logging.basicConfig(filename='app.log', level=logging.INFO)
       logging.info("running daemon")
-      import servicemanager      
       servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,servicemanager.PYS_SERVICE_STARTED,(self._svc_name_, ''))
 
       servicemanager.LogInfoMsg(os.getcwd())
@@ -487,23 +505,10 @@ class aservice(win32serviceutil.ServiceFramework):
       #TODO: Move this to threading model and start/stop the thread only when we have registered clients
       # Create a thread as follows
       try:
-         thread.start_new_thread(main, (self, ))
+         thread.start_new_thread(checkForStop, (self, ))
       except:
          print "Error: unable to start thread"
-
-      self.timeout = 3000
-
-      while 1:
-         # Wait for service stop signal, if I timeout, loop again
-         rc = win32event.WaitForSingleObject(self.hWaitStop, self.timeout)
-         # Check to see if self.hWaitStop happened
-         if rc == win32event.WAIT_OBJECT_0:
-            # Stop signal encountered
-            servicemanager.LogInfoMsg("codebender - STOPPED")
-            break
-         else:
-            servicemanager.LogInfoMsg("codebender - is alive and well")   
-               
+      main()
       
 def ctrlHandler(ctrlType):
    return True

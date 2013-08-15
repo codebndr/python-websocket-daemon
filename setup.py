@@ -12,15 +12,20 @@ class Target:
         self.name = "py2exe sample files"
 
 
+my_data_files = [('avrdudes/Windows', ['avrdudes/Windows/avrdude.conf']),
+                ('avrdudes/Windows', ['avrdudes/Windows/avrdude.exe']),
+                ('avrdudes/Windows', ['avrdudes/Windows/libusb0.dll'])]
+
 myservice = Target(
     description = 'codebender python webserial daemon service',
-    modules = ['service'],
+    modules = ['mywinserver'],
     cmdline_style='pywin32'
 )
 
+#    console=["mywinserver.py"],
 setup(
     options = {"py2exe": {"compressed": 1, "bundle_files": 1} },
-    console=["mywinserver.py"],
+    data_files = my_data_files,
     zipfile = None,
     service=[myservice]
 )
