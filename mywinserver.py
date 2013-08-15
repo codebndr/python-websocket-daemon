@@ -177,7 +177,7 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	bin_file.write(binary)
 	bin_file.close()
 	bash_shell_file = " -Uflash:w:" + bin_file.name + ":i"
-	bash_shell = os.getcwd() + bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
+	bash_shell = bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
 	print "Flashing: ", bash_shell
 	logging.info("Flashing cmd:")
 	logging.info(bash_shell)
@@ -215,7 +215,7 @@ class EchoServerProtocol(WebSocketServerProtocol):
 		elif message["type"] == "flash":
 			if platform.system() == "Windows":
                                 message["prt"] = '\\\\.\\' + message["prt"]
-			do_flash(websocket, message["cpu"], message["ptc"], message["prt"], message["bad"], message["binary"])
+			do_flash(self, message["cpu"], message["ptc"], message["prt"], message["bad"], message["binary"])
 		elif message["type"] == "message":
 			print message["text"]
 		elif message["type"] == "list_ports":
