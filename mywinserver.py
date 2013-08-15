@@ -159,7 +159,7 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
         if platform.system() == "Windows":
                 bash_shell_path = os.environ['ALLUSERSPROFILE'] + "\codebender"
         else:
-                bash_shell_path = "."
+                bash_shell_path = os.getcwd()
 	bash_shell_cmd = bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude"
 	bash_shell_cnf = " -C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf"
 	bash_shell_cpu = " -p" + cpu
@@ -181,9 +181,19 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	print "Flashing: ", bash_shell
 	logging.info("Flashing cmd:")
 	logging.info(bash_shell)
-	process = subprocess.Popen(bash_shell.split())
-	print "FLASHING!!!"
+	return os.system(bash_shell)
 	#ToDo: Delete the temp file after it's done
+
+def flash(websocket, cpu, ptc, prt, bad, binary):
+        flash_val = flash_arduino(cpu, ptc, prt, bad, binary)
+        websocket.sendMessage(json.dumps({"type":"flashing_output", "retval":flash_val}))
+
+def do_flash(websocket, cpu, ptc, prt, bad, binary):
+	# Create a thread as follows
+	try:
+		thread.start_new_thread(flash, (websocket, cpu, ptc, prt, bad, binary,))
+	except:
+		print "Error: unable to start thread"
 
 class EchoServerProtocol(WebSocketServerProtocol):
 	def onMessage(self, msg, binary):
@@ -204,7 +214,7 @@ class EchoServerProtocol(WebSocketServerProtocol):
 		elif message["type"] == "flash":
 			if platform.system() == "Windows":
                                 message["prt"] = '\\\\.\\' + message["prt"]
-			flash_arduino(message["cpu"], message["ptc"], message["prt"], message["bad"], message["binary"])
+			do_flash(websocket, message["cpu"], message["ptc"], message["prt"], message["bad"], message["binary"])
 		elif message["type"] == "message":
 			print message["text"]
 		elif message["type"] == "list_ports":
