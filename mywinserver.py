@@ -75,10 +75,15 @@ def install_drivers_osx():
 	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
 
 def install_drivers_windows():
-        if platform.architecture()[0] == "32bit":
-                return os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw")
+        if platform.system() == "Windows":
+                driver_path = os.environ['ALLUSERSPROFILE'] + "\codebender"
         else:
-                return os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
+                driver_path = os.getcwd()
+
+        if platform.architecture()[0] == "32bit":
+                return os.system(driver_path + "/drivers/Windows/dpinst-x86.exe /sw")
+        else:
+                return os.system(driver_path + "/drivers/Windows/dpinst-amd64.exe /sw")
 
 def fix_permissions_linux():
 	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
@@ -151,8 +156,12 @@ def check_ports():
                 return check_ports_posix()
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
-	bash_shell_cmd = "./avrdudes/" + platform.system() + "/avrdude"
-	bash_shell_cnf = " -C./avrdudes/" + platform.system() + "/avrdude.conf"
+        if platform.system() == "Windows":
+                bash_shell_path = os.environ['ALLUSERSPROFILE'] + "\codebender"
+        else:
+                bash_shell_path = "."
+	bash_shell_cmd = bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude"
+	bash_shell_cnf = " -C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf"
 	bash_shell_cpu = " -p" + cpu
 	bash_shell_ptc = " -c" + ptc
 	bash_shell_prt = " -P" + prt
