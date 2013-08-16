@@ -89,7 +89,7 @@ def check_ports_posix():
 
 	ports = []
 	for port in list:
-		if(port[0].startswith("/dev/tty.")):
+		if(port[0].startswith("/dev/tty") and not port[0].startswith("/dev/ttyS")):
 			ports.append(port[0])
 	return ports
 
