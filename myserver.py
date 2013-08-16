@@ -35,11 +35,16 @@ def install_drivers_windows():
         else:
                 os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
 
+def fix_permissions_linux():
+	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
+
 def install_drivers():
 	if platform.system() == "Darwin":
 		install_drivers_osx()
 	elif platform.system() == "Windows":
                 install_drivers_windows()
+	elif platform.system() == "Linux":
+		fix_permissions_linux()
 
 def do_install_drivers():
 	# Create a thread as follows
@@ -60,11 +65,21 @@ def check_drivers_windows(websocket):
 	else:
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
 
+def check_permissions_linux(websocket):
+	output = os.popen("groups | grep $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)").read()
+	if output != "":
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
+	else:
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+
+#ToDo: rename this to make more sense
 def check_drivers(websocket):
 	if platform.system() == "Darwin":
 		check_drivers_osx(websocket)
 	elif platform.system() == "Windows":
 		check_drivers_windows(websocket)
+	elif platform.system() == "Linux":
+		check_permissions_linux(websocket)
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
 	bash_shell_cmd = "./avrdudes/" + platform.system() + "/avrdude"
