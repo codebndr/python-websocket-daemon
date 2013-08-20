@@ -8,19 +8,20 @@
 
          var sock = null;
          var wsuri = "ws://localhost:9000";
-		
-		window.oldPorts = "";
+		 var sock2 = null;
+         var wsuri2 = "ws://localhost:9001";
+
+		 window.oldPorts = "";
 
          window.onload = function() {
-	
-			window.setInterval(function(){checkDrivers();}, 500)
 
             sock = new WebSocket(wsuri);
 
             sock.onopen = function() {
                console.log("connected to " + wsuri);
 				version();
-				listPorts();
+
+				window.setInterval( function(){sock.send(JSON.stringify({"type":"ack"}));}, 500);
             }
 
             sock.onclose = function(e) {
@@ -44,7 +45,6 @@
 						}
 						oldPorts = data["ports"];
 					}
-					listPorts();
 				}
 				else if(data["type"] == "version")
 				{
@@ -58,13 +58,29 @@
 					document.getElementById('drivers').innerHTML = "NOT INSTALLED";
 				}
             }
-         };
 
-		function listPorts()
-		{
-            var msg = {"type":"list_ports"};
-            sock.send(JSON.stringify(msg));
-		};
+            window.sock2 = new WebSocket(wsuri2);
+
+            sock2.onopen = function() {
+               console.log("connected to " + wsuri2);
+				window.setInterval( function() {sock2.send(JSON.stringify({"type":"ack"}));}, 500);
+            }
+
+            sock2.onclose = function(e) {
+               console.log("connection closed (" + e.code + ")");
+            }
+
+            sock2.onmessage = function(e) {
+               console.log("message received: " + e.data);
+				var data = JSON.parse(e.data);
+				if(data["type"] == "data")
+				{
+					$("#serialmon").html($("#serialmon").html() + data["data"]);
+				}
+            }
+
+
+         };
 
          function send() {
             var msg = {"type":"message","text":document.getElementById('message').value};
@@ -92,6 +108,21 @@
             var msg = {"type":"install_drivers"};
             sock.send(JSON.stringify(msg));
 		};
+
+        function connect() {
+           var msg = {"type":"serial_connect","port":serial_select.selectedOptions[0].text, "baudrate":serial_baud.selectedOptions[0].text};
+           sock2.send(JSON.stringify(msg));
+        };
+
+        function disconnect() {
+           var msg = {"type":"serial_disconnect",};
+           sock2.send(JSON.stringify(msg));
+        };
+
+        function sendData() {
+           var msg = {"type":"data","data":document.getElementById('message').value};
+           sock2.send(JSON.stringify(msg));
+        };
       </script>
    </head>
    <body>
@@ -110,6 +141,13 @@
       <button onclick="checkDrivers();">Check Drivers</button>
       <button onclick="installDrivers();">Install Drivers</button>
 	<select id="serial_select" style="width:300px"></select>
+
+	<br />
+	  <button onclick="connect();">Connect</button>
+      <button onclick="disconnect();">Disconnect</button>
+      <button onclick="sendData();">Send Message</button>
+	<select id="serial_baud" style="width:300px"><option id="9600" name=9600>9600</option></select>
+	<pre id="serialmon" style="display: block; border: 1px solid; width:500px; height: 800px; overflow-y: scroll">WebSerial Monitor Input:</pre>
    
 
 </body></html>
