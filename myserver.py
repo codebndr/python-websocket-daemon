@@ -15,7 +15,8 @@ from twisted.python import log
 
 #needed for py2exe
 import autobahn.resource
-from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
+from autobahn.websocket import HttpException, WebSocketServerFactory, WebSocketServerProtocol, listenWS
+from autobahn import httpstatus
 
 import json
 
@@ -135,20 +136,6 @@ def check_ports():
         else:
                 return check_ports_posix()
 
-
-def update_ports(websocket):
-	print "Starting check for ports"
-	old_ports = []
-	while 1:
-		ports = check_ports()
-		if(ports != old_ports):
-			for port in ports:
-				print port
-			print "Sending Ports Message"
-			websocket.sendMessage(json.dumps({"type":"ports", "ports":ports}))
-		old_ports = ports
-		time.sleep(0.05)
-
 def flash_arduino(cpu, ptc, prt, bad, binary):
 	bash_shell_cmd = "./avrdudes/" + platform.system() + "/avrdude"
 	bash_shell_cnf = " -C./avrdudes/" + platform.system() + "/avrdude.conf"
@@ -219,14 +206,32 @@ class EchoServerProtocol(WebSocketServerProtocol):
 			else:
 				print "Could not send data. No active serial connections"
 
-	def onOpen(self):
-		self.sendMessage(json.dumps({"text":"Socket Opened"}));
+	def onConnect(self, request):
+		print "peer " + str(request.peer)
+		print "peer_host " + request.peer.host
+		print "peerstr " + request.peerstr
+		print "headers " + str(request.headers)
+		print "host " + request.host
+		print "path " + request.path
+		print "params " + str(request.params)
+		print "version " + str(request.version)
+		print "origin " + request.origin
+		print "protocols " + str(request.protocols)
 
-		# Create a thread as follows
-		try:
-			thread.start_new_thread(update_ports, (self, ))
-		except:
-			print "Error: unable to start thread"
+		#TODO: For development purposes only. Fix this so it doesn't work for null (localhost) as well.
+		if(request.peer.host != "127.0.0.1" or (request.origin != "null" and request.origin != "http://codebender.cc")):
+			raise HttpException(httpstatus.HTTP_STATUS_CODE_UNAUTHORIZED[0], "You are not authorized for this!")
+
+	def onOpen(self):
+		self.factory.register(self)
+		self.sendMessage(json.dumps({"text":"Socket Opened"}));
+		ports = check_ports()
+		print "Sending Ports Message"
+		self.sendMessage(json.dumps({"type":"ports", "ports":ports}))
+
+	def connectionLost(self, reason):
+		WebSocketServerProtocol.connectionLost(self, reason)
+		self.factory.unregister(self)
 
 
 ################ WEBSERIAL READER CODE
@@ -270,6 +275,61 @@ def writer(serial_port, data):
 
 ################ END OF WEBSERIAL CODE
 
+def update_ports(factory):
+	print "Starting check for ports"
+	old_ports = []
+	while 1:
+		ports = check_ports()
+		if(ports != old_ports):
+			for port in ports:
+				print port
+			print "Sending Ports Message"
+			factory.broadcast(json.dumps({"type":"ports", "ports":ports}))
+		old_ports = ports
+		time.sleep(0.05)
+
+################### CUSTOM FACTORY ###################
+class BroadcastServerFactory(WebSocketServerFactory):
+	"""
+	Simple broadcast server broadcasting any message it receives to all
+	currently connected clients.
+	"""
+
+	def __init__(self, url):
+		WebSocketServerFactory.__init__(self, url)
+		self.clients = []
+		self.tick()
+
+		#TODO: Move this to threading model and start/stop the thread only when we have registered clients
+		# Create a thread as follows
+		try:
+			thread.start_new_thread(update_ports, (self, ))
+		except:
+			print "Error: unable to start thread"
+
+	def tick(self):
+		self.broadcast(json.dumps({"type":"heartbeat"}))
+		reactor.callLater(1, self.tick)
+
+	def register(self, client):
+		if not client in self.clients:
+			print "registered client " + client.peerstr
+			self.clients.append(client)
+
+	def unregister(self, client):
+		if client in self.clients:
+			print "unregistered client " + client.peerstr
+			self.clients.remove(client)
+
+	def broadcast(self, msg):
+		# print "broadcasting message '%s' .." % msg
+		for c in self.clients:
+			c.sendMessage(msg)
+			# print "message sent to " + c.peerstr
+
+################### END CUSTOM FACTORY ###################
+
+
 log.startLogging(sys.stdout)
 
 list = []
@@ -278,7 +338,10 @@ list = []
 if __name__ == '__main__':
 
 	#initializing serial flashing etc utilities socket
-	factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
+	ServerFactory = BroadcastServerFactory
+
+	factory = ServerFactory("ws://localhost:9000")
+	# factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
 	factory.protocol = EchoServerProtocol
 	listenWS(factory)
 	reactor.run()
