@@ -29,11 +29,125 @@ import tempfile
 
 import platform
 
-import check_requirements
-import fix_requirements
-import port_listing
 
 logging.basicConfig(filename='app.log', level=logging.INFO)
+
+
+def check_drivers_osx(websocket):
+	if(os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.FTDIUSBSerialDriver-2.pkg.bom") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.FTDIUSBSerialDriver-2.pkg.plist") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.postflight.pkg.bom") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.postflight.pkg.plist") and os.path.exists("/var/db/receipts/com.FTDI.ftdiusbserialdriverinstaller.preflight.pkg.bom")):
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
+	else:
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+
+def check_drivers_windows(websocket):
+	if(os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_neutral_f13cf06b4049adb5/arduino.inf")):
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
+	else:
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+
+def check_permissions_linux(websocket):
+	output = os.popen("groups | grep $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)").read()
+	if output != "":
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
+	else:
+		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+
+#ToDo: rename this to make more sense
+def check_drivers(websocket):
+	if platform.system() == "Darwin":
+		check_drivers_osx(websocket)
+	elif platform.system() == "Windows":
+		check_drivers_windows(websocket)
+	elif platform.system() == "Linux":
+		check_permissions_linux(websocket)
+
+
+
+def install_drivers_osx():
+	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
+
+def install_drivers_windows():
+        if platform.architecture()[0] == "32bit":
+                os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw")
+        else:
+                os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
+
+def fix_permissions_linux():
+	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
+
+def install_drivers(websocket):
+	if platform.system() == "Darwin":
+		return_val = install_drivers_osx()
+		if(return_val == 0):
+			websocket.sendMessage(json.dumps({"type":"installation_output", "success":True}))
+		else:
+			websocket.sendMessage(json.dumps({"type":"installation_output", "success":False, "error":return_val}))
+	elif platform.system() == "Windows":
+                install_drivers_windows()
+	elif platform.system() == "Linux":
+		fix_permissions_linux()
+
+def do_install_drivers(websocket):
+	# Create a thread as follows
+	try:
+		thread.start_new_thread(install_drivers, (websocket,))
+	except:
+		print "Error: unable to start thread"
+
+def check_ports_posix():
+	list = list_ports.comports()
+
+	ports = []
+	for port in list:
+		if(port[0].startswith("/dev/tty") and not port[0].startswith("/dev/ttyS")):
+			ports.append(port[0])
+	return ports
+
+try:
+	import _winreg as winreg
+	import itertools
+except ImportError:
+	pass
+
+def check_ports_windows():
+        """ Uses the Win32 registry to return an
+        iterator of serial (COM) ports
+        existing on this computer.
+        """
+        path = 'HARDWARE\\DEVICEMAP\\SERIALCOMM'
+        try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path)
+        except WindowsError:
+                raise IterationError
+
+        ports = []
+        for i in itertools.count():
+                try:
+                        val = winreg.EnumValue(key, i)
+                        ports.append(str(val[1]))
+                except EnvironmentError:
+                        break
+        return ports
+
+def check_ports():
+        if platform.system() == "Windows":
+                return check_ports_windows()
+        else:
+                return check_ports_posix()
+
+
+def update_ports(websocket):
+	print "Starting check for ports"
+	old_ports = []
+	while 1:
+		ports = check_ports()
+		if(ports != old_ports):
+			for port in ports:
+				print port
+			print "Sending Ports Message"
+			websocket.sendMessage(json.dumps({"type":"ports", "ports":ports}))
+		old_ports = ports
+		time.sleep(0.05)
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
 	bash_shell_cmd = "./avrdudes/" + platform.system() + "/avrdude"
@@ -54,15 +168,24 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	#ToDo: Delete the temp file after it's done
 
 class EchoServerProtocol(WebSocketServerProtocol):
+	def __init__(self):
+		self.myserial = None
+
 	def onMessage(self, msg, binary):
-		logging.info("Received message: %s", msg)
-		print "Received message: ", msg
-		message = json.loads(msg)
-		
+		try:
+			message = json.loads(msg)
+		except ValueError:
+			logging.info("Received message: %s", msg)
+			print "Received message: ", msg
+		if message["type"] == "ack":
+			self.sendMessage(msg, binary)
+		else:
+			logging.info("Received message: %s", msg)
+			print "Received message: ", msg
+
+
 		if message["type"] == "version":
 			self.sendMessage(json.dumps({"type":"version", "version":"0.1"}) ,binary)
-		elif message["type"] == "ack":
-			self.sendMessage(msg, binary)
 		elif message["type"] == "flash":
 			if platform.system() == "Windows":
                                 message["prt"] = '\\\\.\\' + message["prt"]
@@ -75,7 +198,26 @@ class EchoServerProtocol(WebSocketServerProtocol):
 		elif message["type"] == "check_drivers":
 			check_drivers(self)
 		elif message["type"] == "install_drivers":
-			do_install_drivers()
+			do_install_drivers(self)
+		elif message["type"] == "serial_connect":
+			print "Connect Message Received"
+			self.myserial = serial.Serial(message["port"], baudrate= message["baudrate"], timeout=0)
+			self.read_thread = ReaderThread(self, self.myserial)
+			self.read_thread.daemon = True
+			self.read_thread.start()
+		elif message["type"] == "serial_disconnect":
+			print "Disconnect Message Received"
+			if self.myserial != None:
+				oldserial = self.myserial
+				self.myserial = None
+				self.read_thread.stop()
+				self.read_thread.join()
+				oldserial.close()
+		elif message["type"] == "data":
+			if self.myserial != None:
+				writer(self.myserial, message["data"])
+			else:
+				print "Could not send data. No active serial connections"
 
 	def onOpen(self):
 		self.sendMessage(json.dumps({"text":"Socket Opened"}));
@@ -87,7 +229,7 @@ class EchoServerProtocol(WebSocketServerProtocol):
 			print "Error: unable to start thread"
 
 
-################ WEBSERIAL CODE
+################ WEBSERIAL READER CODE
 
 class ReaderThread(threading.Thread, ):
 	"""Thread class with a stop() method. The thread itself has to check
@@ -125,42 +267,6 @@ class ReaderThread(threading.Thread, ):
 def writer(serial_port, data):
 	serial_port.write(data)
 
-class WebserialProtocol(WebSocketServerProtocol):
-	def __init__(self):
-		self.myserial = None
-
-	def onMessage(self, msg, binary):
-		logging.info("Received message: %s", msg)
-		print "Received message: ", msg
-		message = json.loads(msg)
-
-		if message["type"] == "version":
-			self.sendMessage(json.dumps({"type":"version", "version":"0.1"}) ,binary)
-		elif message["type"] == "ack":
-			self.sendMessage(msg, binary)
-		elif message["type"] == "serial_connect":
-			print "Connect Message Received"
-			self.myserial = serial.Serial(message["port"], baudrate= message["baudrate"], timeout=0)
-			self.read_thread = ReaderThread(self, self.myserial)
-			self.read_thread.daemon = True
-			self.read_thread.start()
-		elif message["type"] == "serial_disconnect":
-			print "Disconnect Message Received"
-			if self.myserial != None:
-				oldserial = self.myserial
-				self.myserial = None
-				self.read_thread.stop()
-				self.read_thread.join()
-				oldserial.close()
-		elif message["type"] == "data":
-			if self.myserial != None:
-				writer(self.myserial, message["data"])
-			else:
-				print "Could not send data. No active serial connections"
-
-	def onOpen(self):		
-		self.sendMessage(json.dumps({"text":"Socket Opened"}));
-
 
 ################ END OF WEBSERIAL CODE
 
@@ -175,10 +281,4 @@ if __name__ == '__main__':
 	factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
 	factory.protocol = EchoServerProtocol
 	listenWS(factory)
-
-	#initializing webserial socket
-	factory2 = WebSocketServerFactory("ws://localhost:9001", debug = False)
-	factory2.protocol = WebserialProtocol
-	listenWS(factory2)
-
 	reactor.run()
