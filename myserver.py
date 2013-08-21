@@ -31,6 +31,12 @@ import tempfile
 import platform
 
 
+list = []
+serial_port = None
+serial_device = None
+serial_baudrate = None
+
+
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
 
@@ -155,9 +161,6 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	#ToDo: Delete the temp file after it's done
 
 class EchoServerProtocol(WebSocketServerProtocol):
-	def __init__(self):
-		self.myserial = None
-
 	def onMessage(self, msg, binary):
 		try:
 			message = json.loads(msg)
@@ -186,25 +189,16 @@ class EchoServerProtocol(WebSocketServerProtocol):
 			check_drivers(self)
 		elif message["type"] == "install_drivers":
 			do_install_drivers(self)
-		elif message["type"] == "serial_connect":
-			print "Connect Message Received"
-			self.myserial = serial.Serial(message["port"], baudrate= message["baudrate"], timeout=0)
-			self.read_thread = ReaderThread(self, self.myserial)
-			self.read_thread.daemon = True
-			self.read_thread.start()
-		elif message["type"] == "serial_disconnect":
-			print "Disconnect Message Received"
-			if self.myserial != None:
-				oldserial = self.myserial
-				self.myserial = None
-				self.read_thread.stop()
-				self.read_thread.join()
-				oldserial.close()
-		elif message["type"] == "data":
-			if self.myserial != None:
-				writer(self.myserial, message["data"])
+		elif message["type"] == "set_serial":
+			global serial_port
+			global serial_device
+			global serial_baudrate
+			if serial_port == None:
+				serial_device = message["port"]
+				serial_baudrate = message["baudrate"]
 			else:
-				print "Could not send data. No active serial connections"
+				self.sendMessage(json.dumps({"type":"error", "message":"You cannot set port while a serial connection is still open"}))
+			
 
 	def onConnect(self, request):
 		print "peer " + str(request.peer)
@@ -230,50 +224,9 @@ class EchoServerProtocol(WebSocketServerProtocol):
 		self.sendMessage(json.dumps({"type":"ports", "ports":ports}))
 
 	def connectionLost(self, reason):
-		WebSocketServerProtocol.connectionLost(self, reason)
 		self.factory.unregister(self)
+		WebSocketServerProtocol.connectionLost(self, reason)
 
-
-################ WEBSERIAL READER CODE
-
-class ReaderThread(threading.Thread, ):
-	"""Thread class with a stop() method. The thread itself has to check
-	regularly for the stopped() condition."""
-
-	def __init__(self, websocket_port, serial_port):
-		super(ReaderThread, self).__init__()
-		self._stop = threading.Event()
-		self.websocket_port = websocket_port
-		self.serial_port = serial_port
-
-	def stop(self):
-		self.run = False
-		self._stop.set()
-
-	def stopped(self):
-		return self._stop.isSet()
-
-	def run(self):
-		self.run = True
-		self.read()
-
-	def read(self):
-		"""loop and copy serial->console"""
-		try:
-			while self.run:
-				data = self.serial_port.read(10).decode("ascii")
-				if(data != ""):
-					sys.stdout.write(data)
-					sys.stdout.flush()
-					self.websocket_port.sendMessage(json.dumps({"type":"data", "data":data}))
-		except serial.SerialException, e:
-			raise
-
-def writer(serial_port, data):
-	serial_port.write(data)
-
-
-################ END OF WEBSERIAL CODE
 
 def update_ports(factory):
 	print "Starting check for ports"
@@ -329,10 +282,125 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
 ################### END CUSTOM FACTORY ###################
 
+################ WEBSERIAL CODE
+
+class ReaderThread(threading.Thread, ):
+	"""Thread class with a stop() method. The thread itself has to check
+	regularly for the stopped() condition."""
+
+	def __init__(self, websocket_port, serial_port):
+		super(ReaderThread, self).__init__()
+		self._stop = threading.Event()
+		self.websocket_port = websocket_port
+		self.serial_port = serial_port
+
+	def stop(self):
+		self.run = False
+		self._stop.set()
+
+	def stopped(self):
+		return self._stop.isSet()
+
+	def run(self):
+		self.run = True
+		self.read()
+
+	def read(self):
+		"""loop and copy serial->console"""
+		try:
+			while self.run:
+				data = self.serial_port.read().decode("ascii")
+				if(data != ""):
+					# sys.stdout.write(data)
+					# sys.stdout.flush()
+					self.websocket_port.sendMessage(str(data))
+		except serial.SerialException, e:
+			raise
+
+def writer(serial_port, data):
+	serial_port.write(data)
+
+
+class WebSerialProtocol(WebSocketServerProtocol):
+	def __init__(self):
+		self.connection_invalid = False
+
+	def onMessage(self, msg, binary):
+		# logging.info("Received message: %s", msg)
+		# print "Received message: ", msg
+
+		global serial_port
+		global serial_device
+		global serial_baudrate
+
+		if serial_port != None:
+			writer(serial_port, msg)
+		else:
+			print "Could not send data. No active serial connections"
+
+	def onConnect(self, request):
+		print "peer " + str(request.peer)
+		print "peer_host " + request.peer.host
+		print "peerstr " + request.peerstr
+		print "headers " + str(request.headers)
+		print "host " + request.host
+		print "path " + request.path
+		print "params " + str(request.params)
+		print "version " + str(request.version)
+		print "origin " + request.origin
+		print "protocols " + str(request.protocols)
+
+		#TODO: For development purposes only. Fix this so it doesn't work for null (localhost) as well.
+		if(request.peer.host != "127.0.0.1" or (request.origin != "null" and request.origin != "http://codebender.cc")):
+			self.connection_invalid = True
+			raise HttpException(httpstatus.HTTP_STATUS_CODE_UNAUTHORIZED[0], "You are not authorized for this!")
+
+		global serial_port
+		global serial_device
+		global serial_baudrate
+
+		if(serial_port != None):
+			self.connection_invalid = True
+			raise HttpException(httpstatus.HTTP_STATUS_CODE_UNAUTHORIZED[0], "You cannot open 2 serial ports!")
+
+		if(serial_device == None or serial_baudrate == None):
+			self.connection_invalid = True
+			raise HttpException(httpstatus.HTTP_STATUS_CODE_UNAUTHORIZED[0], "You must set serial device first!")
+
+	def onOpen(self):
+		global serial_port
+		global serial_device
+		global serial_baudrate
+
+		print "Connect Message Received"
+		serial_port = serial.Serial(serial_device, baudrate= serial_baudrate, timeout=0)
+		self.read_thread = ReaderThread(self, serial_port)
+		self.read_thread.daemon = True
+		self.read_thread.start()
+
+	def connectionLost(self, reason):
+		global serial_port
+		global serial_device
+		global serial_baudrate
+
+		if not self.connection_invalid:
+			print "Disconnect Message Received"
+			if serial_port != None:
+				oldserial = serial_port
+				serial_port = None
+				serial_device = None
+				serial_baudrate = None
+				self.read_thread.stop()
+				self.read_thread.join()
+				oldserial.close()
+		WebSocketServerProtocol.connectionLost(self, reason)
+
+################ END OF WEBSERIAL CODE
+
 
 log.startLogging(sys.stdout)
 
-list = []
+
 
 # ?
 if __name__ == '__main__':
@@ -344,4 +412,9 @@ if __name__ == '__main__':
 	# factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
 	factory.protocol = EchoServerProtocol
 	listenWS(factory)
+
+	factory2 = WebSocketServerFactory("ws://localhost:9001")
+	factory2.protocol = WebSerialProtocol
+	listenWS(factory2)
+
 	reactor.run()

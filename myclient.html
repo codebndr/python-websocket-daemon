@@ -9,6 +9,10 @@
          var sock = null;
          var wsuri = "ws://localhost:9000";
 
+
+         window.sock2 = null;
+         var wsuri2 = "ws://localhost:9001";
+
 		 window.oldPorts = "";
 
          window.onload = function() {
@@ -62,10 +66,6 @@
 					else
 						document.getElementById('drivers').innerHTML = "INSTALLATION FAILED " + data["error"];
 				}
-				else if(data["type"] == "data")
-				{
-					$("#serialmon").html($("#serialmon").html() + data["data"]);
-				}
             }
          };
 
@@ -97,18 +97,43 @@
 		};
 
         function connect() {
-           var msg = {"type":"serial_connect","port":serial_select.selectedOptions[0].text, "baudrate":serial_baud.selectedOptions[0].text};
-           sock.send(JSON.stringify(msg));
+			if(sock2 == null)
+			{
+				var msg = {"type":"set_serial","port":serial_select.selectedOptions[0].text, "baudrate":serial_baud.selectedOptions[0].text};
+	           sock.send(JSON.stringify(msg));
+
+				sock2 = new WebSocket(wsuri2);
+
+	            sock2.onopen = function() {
+	               console.log("connected to " + wsuri);
+					version();
+	            }
+
+	            sock2.onclose = function(e) {
+	               console.log("connection closed (" + e.code + ")");
+					sock2 = null;
+	            }
+
+	            sock2.onmessage = function(e) {
+					$("#serialmon").html($("#serialmon").html() + e.data);
+	            }
+			}
+			else
+			console.log("connection already open");
         };
 
         function disconnect() {
-           var msg = {"type":"serial_disconnect",};
-           sock.send(JSON.stringify(msg));
+           // var msg = {"type":"serial_disconnect",};
+           // sock.send(JSON.stringify(msg));
+			if(sock2 != null)
+			{
+	           sock2.close();
+			}
         };
 
         function sendData() {
            var msg = {"type":"data","data":document.getElementById('message').value};
-           sock.send(JSON.stringify(msg));
+           sock2.send(JSON.stringify(msg));
         };
       </script>
    </head>
