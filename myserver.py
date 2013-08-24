@@ -166,8 +166,6 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	logging.info("temp filename: %s\n", bin_file.name)
 	bin_file.write(binary)
 	bin_file.close()
-	if platform.system() == "Windows":
-                bin_file.close()
 	bash_shell_file = " -Uflash:w:" + bin_file.name + ":i"
 	bash_shell = os.getcwd() + bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
 	print "Flashing: ", bash_shell
