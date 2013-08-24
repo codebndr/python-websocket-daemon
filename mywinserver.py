@@ -162,27 +162,28 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
                 bash_shell_path = os.getcwd()
 	bash_shell_cmd = bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude"
 	bash_shell_cnf = " -C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf"
+	#TODO: Check about verbose options and speed
+	# bash_shell_vbz = " -v -v -v -v"
+	bash_shell_vbz = " "
 	bash_shell_cpu = " -p" + cpu
 	bash_shell_ptc = " -c" + ptc
 	bash_shell_prt = " -P" + prt
 	bash_shell_bad = " -b" + bad
-	binary = base64.b64decode(binary)
-	if platform.system() == "Windows":
-                bin_file = tempfile.NamedTemporaryFile(delete=False)
-        else:
-                bin_file = tempfile.NamedTemporaryFile()
+	# TODO: Check for .bin vs .hex
+	# binary = base64.b64decode(binary)
+	bin_file = tempfile.NamedTemporaryFile(delete=False)
 	print "file name: ", bin_file.name
 	logging.info("temp filename: %s\n", bin_file.name)
 	bin_file.write(binary)
-	if platform.system() == "Windows":
-                bin_file.close()
+	bin_file.close()
 	bash_shell_file = " -Uflash:w:" + bin_file.name + ":i"
-	bash_shell = bash_shell_cmd + bash_shell_cnf + " -v -v -v -v" + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
+	bash_shell = os.getcwd() + bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
 	print "Flashing: ", bash_shell
 	logging.info("Flashing cmd:")
 	logging.info(bash_shell)
-	return os.system(bash_shell)
-	#ToDo: Delete the temp file after it's done
+	retval = os.system(bash_shell)
+	os.unlink(bin_file.name)
+	return retval
 
 def flash(websocket, cpu, ptc, prt, bad, binary):
         flash_val = flash_arduino(cpu, ptc, prt, bad, binary)
