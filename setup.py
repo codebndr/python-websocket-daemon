@@ -9,7 +9,7 @@ class Target:
         self.version = "0.1.0"
         self.company_name = "codebender"
         self.copyright = "no copyright"
-        self.name = "py2exe sample files"
+        self.name = "codebender"
 
 
 my_data_files = [('avrdudes/Windows', ['avrdudes/Windows/avrdude.conf']),
@@ -21,7 +21,7 @@ my_data_files = [('avrdudes/Windows', ['avrdudes/Windows/avrdude.conf']),
                 ('drivers/Windows', ['drivers/Windows/dpinst-amd64.exe'])]
 
 myservice = Target(
-    description = 'codebender python webserial daemon service',
+    description = 'codebender',
     modules = ['mywinserver'],
     cmdline_style='pywin32'
 )

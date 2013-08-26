@@ -490,7 +490,7 @@ import servicemanager
 
 def checkForStop(self):
         
-      self.timeout = 3000
+      self.timeout = 60000
 
       while 1:
          # Wait for service stop signal, if I timeout, loop again
