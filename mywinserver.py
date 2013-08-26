@@ -76,14 +76,14 @@ def install_drivers_osx():
 
 def install_drivers_windows():
         if platform.system() == "Windows":
-                driver_path = os.environ['ALLUSERSPROFILE'] + "\codebender"
+                driver_path = os.environ['PROGRAMFILES'] + "\codebender"
         else:
                 driver_path = os.getcwd()
 
         if platform.architecture()[0] == "32bit":
-                return os.system(driver_path + "/drivers/Windows/dpinst-x86.exe /sw")
+                return os.system("\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw")
         else:
-                return os.system(driver_path + "/drivers/Windows/dpinst-amd64.exe /sw")
+                return os.system("\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw")
 
 def fix_permissions_linux():
 	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
@@ -157,11 +157,16 @@ def check_ports():
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
         if platform.system() == "Windows":
-                bash_shell_path = os.environ['ALLUSERSPROFILE'] + "\codebender"
+                bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender"
         else:
                 bash_shell_path = os.getcwd()
 	bash_shell_cmd = bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude"
-	bash_shell_cnf = " -C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf"
+        if platform.system() == "Windows":
+                bash_shell_cmd = bash_shell_cmd.replace(" ", "^ ")
+                bash_shell_cnf = " \"-C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf\""
+        else:
+                bash_shell_cnf = " -C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf"
+
 	#TODO: Check about verbose options and speed
 	# bash_shell_vbz = " -v -v -v -v"
 	bash_shell_vbz = " "
