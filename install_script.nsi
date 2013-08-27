@@ -18,11 +18,8 @@ writeUninstaller $INSTDIR\uninstaller.exe
 
 SimpleSC::InstallService "codebender" "codebender daemon" "16" "2" "$PROGRAMFILES\codebender\mywinserver.exe" "" "" ""
 Pop $0 ; returns an errorcode (<>0) otherwise success (0)
-MessageBox MB_OK "hello"
 SimpleSC::StartService "codebender" "" 30
-MessageBox MB_OK "hello"
 Pop $0 ; returns an errorcode (<>0) otherwise success (0)
-MessageBox MB_OK "hello"
  
  
 #-------
