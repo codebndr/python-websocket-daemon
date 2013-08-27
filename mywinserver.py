@@ -81,9 +81,15 @@ def install_drivers_windows():
                 driver_path = os.getcwd()
 
         if platform.architecture()[0] == "32bit":
-                return os.system("\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw")
+                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-x86.exe /sw", stdout=subprocess.PIPE, shell=True)
         else:
-                return os.system("\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw")
+                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe /sw", stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        print "program output:", out
+        print "program error:", err
+        print proc.returncode
+
+        return proc.returncode
 
 def fix_permissions_linux():
 	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")

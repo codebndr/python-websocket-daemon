@@ -75,9 +75,16 @@ def install_drivers_osx():
 
 def install_drivers_windows():
         if platform.architecture()[0] == "32bit":
-                return os.system(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw")
+                proc = subprocess.Popen(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw", stdout=subprocess.PIPE, shell=True)
         else:
-                return os.system(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw")
+                proc = subprocess.Popen(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw", stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        print "program output:", out
+        print "program error:", err
+        print proc.returncode
+
+        return proc.returncode
+
 
 def fix_permissions_linux():
 	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
