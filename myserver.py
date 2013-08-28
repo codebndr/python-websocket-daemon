@@ -74,7 +74,7 @@ def install_drivers_osx():
 	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
 
 def install_drivers_windows():
-        if platform.architecture()[0] == "32bit":
+        if platform.machine() == "x86":
                 proc = subprocess.Popen(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw", stdout=subprocess.PIPE, shell=True)
         else:
                 proc = subprocess.Popen(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw", stdout=subprocess.PIPE, shell=True)
