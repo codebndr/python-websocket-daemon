@@ -32,6 +32,12 @@ import platform
 
 import servicemanager
 
+try:
+	import _winreg as winreg
+	import itertools
+except ImportError:
+	pass
+
 list = []
 serial_port = None
 serial_device = None
@@ -53,6 +59,31 @@ def check_drivers_windows(websocket):
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
 	else:
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+
+##def check_drivers_windows(websocket):
+##    try:
+##        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SYSTEM\\DriverDatabase\\DriverPackages")
+##    except WindowsError, e:
+##	websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+##	return
+##
+##    for i in itertools.count():
+##        try:
+##            val = winreg.EnumKey(key, i)
+##            if "arduino.inf" in val:
+##                val = winreg.OpenKey(key, val)
+##                found = 0
+##                for j in itertools.count():
+##                    val2 = winreg.EnumValue(val, j)
+##                    if((val2[0] == "InfName" and val2[1] == "arduino.inf") or ( val2[0] == "SignerName" and val2[1] == "Arduino LLC")):
+##                        found = found + 1
+##                    if found == 2:
+##                        websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
+##                        return
+##        except EnvironmentError:
+##            break
+##    websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
+##    return
 
 def check_permissions_linux(websocket):
 	output = os.popen("groups | grep $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)").read()
@@ -137,12 +168,6 @@ def check_ports_posix():
 		if(port[0].startswith("/dev/tty") and not port[0].startswith("/dev/ttyS")):
 			ports.append(port[0])
 	return ports
-
-try:
-	import _winreg as winreg
-	import itertools
-except ImportError:
-	pass
 
 def check_ports_windows():
         """ Uses the Win32 registry to return an
