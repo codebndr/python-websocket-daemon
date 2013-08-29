@@ -30,6 +30,7 @@ import tempfile
 
 import platform
 
+import servicemanager
 
 list = []
 serial_port = None
@@ -48,7 +49,7 @@ def check_drivers_osx(websocket):
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
 
 def check_drivers_windows(websocket):
-	if(os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_neutral_f13cf06b4049adb5/arduino.inf")):
+	if(os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_f13cf06b4049adb5/arduino.inf")):
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
 	else:
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
@@ -75,18 +76,26 @@ def install_drivers_osx():
 	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
 
 def install_drivers_windows():
+        print "installing drivers"
+        servicemanager.LogInfoMsg("installing drivers")
         if platform.system() == "Windows":
                 driver_path = os.environ['PROGRAMFILES'] + "\codebender"
         else:
                 driver_path = os.getcwd()
 
-        if platform.architecture()[0] == "32bit":
-                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-x86.exe /sw", stdout=subprocess.PIPE, shell=True)
+        if platform.machine() == "x86":
+                print "running:", "\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw"
+                servicemanager.LogInfoMsg("running:" + "\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw")
+                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw", stdout=subprocess.PIPE, shell=True)
         else:
-                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe /sw", stdout=subprocess.PIPE, shell=True)
+                print "running:", "\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw"
+                servicemanager.LogInfoMsg("running:" + "\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw")
+                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw", stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         print "program output:", out
         print "program error:", err
+        servicemanager.LogInfoMsg("program output:" + str(out))
+        servicemanager.LogInfoMsg("program error:" + str(err))
         print proc.returncode
 
         return proc.returncode
@@ -492,7 +501,6 @@ def main():
 
       reactor.run()
 
-import servicemanager      
 
 def checkForStop(self):
         
