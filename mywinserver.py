@@ -171,16 +171,15 @@ def check_ports():
                 return check_ports_posix()
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
+        print "flashing arduino"
+        servicemanager.LogInfoMsg("flashing arduino")
         if platform.system() == "Windows":
-                bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender"
+                bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender/avrdudes/" + platform.system()
         else:
-                bash_shell_path = os.getcwd()
-	bash_shell_cmd = bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude"
-        if platform.system() == "Windows":
-                bash_shell_cmd = bash_shell_cmd.replace(" ", "^ ")
-                bash_shell_cnf = " \"-C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf\""
-        else:
-                bash_shell_cnf = " -C" + bash_shell_path + "/avrdudes/" + platform.system() + "/avrdude.conf"
+                bash_shell_path = os.getcwd() + "/codebender/avrdudes/" + platform.system()
+        bash_shell_cnf = " -Cavrdude.conf"
+
+	bash_shell_cmd =  "avrdude"
 
 	#TODO: Check about verbose options and speed
 	# bash_shell_vbz = " -v -v -v -v"
@@ -198,12 +197,20 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	bin_file.close()
 	bash_shell_file = " -Uflash:w:" + bin_file.name + ":i"
 	bash_shell = bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
-	print "Flashing: ", bash_shell
+	print "Flashing Path: ", bash_shell_path
+	print "Flashing cmd: ", bash_shell
+	logging.info("Flashing Path:")
+	logging.info(bash_shell_path)
 	logging.info("Flashing cmd:")
 	logging.info(bash_shell)
-	retval = os.system(bash_shell)
+        proc = subprocess.Popen(bash_shell, stdout=subprocess.PIPE, shell=True, cwd=bash_shell_path)
+        (out, err) = proc.communicate()
+        print "program output:\n", out
+        print "program error:\n", err
+
+        print proc.returncode
 	os.unlink(bin_file.name)
-	return retval
+	return proc.returncode
 
 def flash(websocket, cpu, ptc, prt, bad, binary):
         flash_val = flash_arduino(cpu, ptc, prt, bad, binary)
