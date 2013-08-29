@@ -78,19 +78,22 @@ def install_drivers_osx():
 def install_drivers_windows():
         print "installing drivers"
         servicemanager.LogInfoMsg("installing drivers")
-        if platform.system() == "Windows":
-                driver_path = os.environ['PROGRAMFILES'] + "\codebender"
-        else:
-                driver_path = os.getcwd()
+        driver_path = os.environ['PROGRAMFILES'] + "\codebender/drivers/Windows/"
 
         if platform.machine() == "x86":
-                print "running:", "\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw"
-                servicemanager.LogInfoMsg("running:" + "\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw")
-                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-x86.exe\" /sw", stdout=subprocess.PIPE, shell=True)
+                driver_cmd = "dpinst-x86.exe /sw"
         else:
-                print "running:", "\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw"
-                servicemanager.LogInfoMsg("running:" + "\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw")
-                proc = subprocess.Popen("\"" + driver_path + "/drivers/Windows/dpinst-amd64.exe\" /sw", stdout=subprocess.PIPE, shell=True)
+                driver_cmd = "dpinst-amd64.exe /sw"
+
+        print "Installation Path: ", driver_path
+        print "Installation cmd: ", driver_cmd
+        logging.info("Installation Path:")
+        logging.info(driver_path)
+        logging.info("Installation CMD:")
+        logging.info(driver_cmd)
+        servicemanager.LogInfoMsg("installing drivers. path: " + driver_path + " & cmd: " + driver_cmd)
+
+        proc = subprocess.Popen(driver_cmd, stdout=subprocess.PIPE, shell=True, cwd=driver_path)
         (out, err) = proc.communicate()
         print "program output:", out
         print "program error:", err

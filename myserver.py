@@ -74,10 +74,22 @@ def install_drivers_osx():
 	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
 
 def install_drivers_windows():
+        print "installing drivers"
+        driver_path = os.environ['PROGRAMFILES'] + "\codebender/drivers/Windows/"
+
         if platform.machine() == "x86":
-                proc = subprocess.Popen(os.getcwd() + "/drivers/Windows/dpinst-x86.exe /sw", stdout=subprocess.PIPE, shell=True)
+                driver_cmd = "dpinst-x86.exe /sw"
         else:
-                proc = subprocess.Popen(os.getcwd() + "/drivers/Windows/dpinst-amd64.exe /sw", stdout=subprocess.PIPE, shell=True)
+                driver_cmd = "dpinst-amd64.exe /sw"
+
+	print "Installation Path: ", driver_path
+	print "Installation cmd: ", driver_cmd
+	logging.info("Installation Path:")
+	logging.info(driver_path)
+	logging.info("Installation CMD:")
+	logging.info(driver_cmd)
+
+        proc = subprocess.Popen(driver_cmd, stdout=subprocess.PIPE, shell=True, cwd=driver_path)
         (out, err) = proc.communicate()
         print "program output:", out
         print "program error:", err
@@ -157,8 +169,16 @@ def check_ports():
                 return check_ports_posix()
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
-	bash_shell_cmd = "/avrdudes/" + platform.system() + "/avrdude"
-	bash_shell_cnf = " -C" + os.getcwd() + "/avrdudes/" + platform.system() + "/avrdude.conf"
+        print "flashing arduino"
+
+        if platform.system() == "Windows":
+                bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender/avrdudes/" + platform.system()
+        else:
+                bash_shell_path = os.getcwd() + "/codebender/avrdudes/" + platform.system()
+        bash_shell_cnf = " -Cavrdude.conf"
+
+	bash_shell_cmd =  "avrdude"
+
 	#TODO: Check about verbose options and speed
 	# bash_shell_vbz = " -v -v -v -v"
 	bash_shell_vbz = " "
@@ -174,13 +194,21 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	bin_file.write(binary)
 	bin_file.close()
 	bash_shell_file = " -Uflash:w:" + bin_file.name + ":i"
-	bash_shell = os.getcwd() + bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
-	print "Flashing: ", bash_shell
+	bash_shell = bash_shell_cmd + bash_shell_cnf + bash_shell_vbz + bash_shell_cpu + bash_shell_ptc + bash_shell_prt + bash_shell_bad + " -D" + bash_shell_file
+	print "Flashing Path: ", bash_shell_path
+	print "Flashing cmd: ", bash_shell
+	logging.info("Flashing Path:")
+	logging.info(bash_shell_path)
 	logging.info("Flashing cmd:")
 	logging.info(bash_shell)
-	retval = os.system(bash_shell)
+        proc = subprocess.Popen(bash_shell, stdout=subprocess.PIPE, shell=True, cwd=bash_shell_path)
+        (out, err) = proc.communicate()
+        print "program output:\n", out
+        print "program error:\n", err
+
+        print proc.returncode
 	os.unlink(bin_file.name)
-	return retval
+	return proc.returncode
 
 def flash(websocket, cpu, ptc, prt, bad, binary):
         flash_val = flash_arduino(cpu, ptc, prt, bad, binary)
