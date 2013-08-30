@@ -13,6 +13,16 @@ setOutPath $INSTDIR
 # specify file to go in output path
 File /r dist\*
 
+!include x64.nsh
+
+${if} ${RunningX64}
+; 64 bits go here
+ExecWait '"$INSTDIR\drivers\Windows\dpinst-amd64.exe" /sw'
+${Else}
+; 32 bits go here
+ExecWait '"$INSTDIR\drivers\Windows\dpinst-x86.exe" /sw'
+${EndIf}
+
 # define uninstaller name
 writeUninstaller $INSTDIR\uninstaller.exe
 
