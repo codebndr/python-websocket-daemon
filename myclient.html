@@ -20,12 +20,14 @@
 
             sock.onopen = function() {
                console.log("connected to " + wsuri);
+				document.getElementById('connection_status').innerHTML = "CONNECTED"
 				version();
 
 				window.setInterval( function(){sock.send(JSON.stringify({"type":"ack"}));}, 500);
             }
 
             sock.onclose = function(e) {
+				document.getElementById('connection_status').innerHTML = "DISCONNECTED"
                console.log("connection closed (" + e.code + ")");
             }
 
@@ -64,6 +66,13 @@
 						document.getElementById('drivers').innerHTML = "INSTALLATION SUCCESSFUL";
 					else
 						document.getElementById('drivers').innerHTML = "INSTALLATION FAILED " + data["error"];
+				}
+				else if(data["type"] == "flashing_output")
+				{
+					if(data["retval"] == 0)
+						document.getElementById('flasing_status').innerHTML = "FLASHING SUCCESSFUL";
+					else
+						document.getElementById('flasing_status').innerHTML = "FLASHING FAILED " + data["retval"];
 				}
             }
          };
@@ -140,7 +149,9 @@
       <h1>WebSocket Echo Test</h1>
       <form>
 		<p>
+			Status: <span id="connection_status">NOT CONNECTED</span>
 			WebSocket Daemon Version: <span id="daemon_version">Unknown</span> <span id="drivers"></span>
+			Flashing Status: <span id="flasing_status">None</span>
 		</p>
          <p>
             Message: <input id="message" value="Hello, world!" type="text">
