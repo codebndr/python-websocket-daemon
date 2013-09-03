@@ -83,7 +83,7 @@
          };
 
          function flash() {
-            var msg = {"type":"flash","binary":window.binary, "cpu":"atmega328p", "ptc":"arduino", "prt":serial_select.selectedOptions[0].text, "bad":"115200"};
+            var msg = {"type":"flash","binary":window.binary, "cpu":"atmega328p", "ptc":"arduino", "prt":serial_select.options[serial_select.selectedIndex].value, "bad":"115200"};
             sock.send(JSON.stringify(msg));
          };
 
@@ -107,7 +107,7 @@
         function connect() {
 			if(sock2 == null)
 			{
-				var msg = {"type":"set_serial","port":serial_select.selectedOptions[0].text, "baudrate":serial_baud.selectedOptions[0].text};
+				var msg = {"type":"set_serial","port":serial_select.options[serial_select.selectedIndex].value, "baudrate":serial_baud.selectedOptions[0].text};
 	           sock.send(JSON.stringify(msg));
 
 				sock2 = new WebSocket(wsuri2);
