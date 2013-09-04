@@ -31,6 +31,7 @@ import tempfile
 import platform
 
 try:
+	import servicemanager
 	import _winreg as winreg
 	import itertools
 except ImportError:
@@ -43,6 +44,7 @@ serial_baudrate = None
 
 
 logging.basicConfig(filename='app.log', level=logging.INFO)
+logging.info("Starting")
 
 
 def check_drivers_osx(websocket):
@@ -104,13 +106,13 @@ def install_drivers_osx():
 	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
 
 def install_drivers_windows():
-        print "installing drivers"
-        driver_path = os.environ['PROGRAMFILES'] + "\codebender/drivers/Windows/"
+	print "installing drivers"
+	driver_path = os.environ['PROGRAMFILES'] + "\codebender/drivers/Windows/"
 
-        if platform.machine() == "x86":
-                driver_cmd = "dpinst-x86.exe /sw"
-        else:
-                driver_cmd = "dpinst-amd64.exe /sw"
+	if platform.machine() == "x86":
+			driver_cmd = "dpinst-x86.exe /sw"
+	else:
+			driver_cmd = "dpinst-amd64.exe /sw"
 
 	print "Installation Path: ", driver_path
 	print "Installation cmd: ", driver_cmd
@@ -119,14 +121,13 @@ def install_drivers_windows():
 	logging.info("Installation CMD:")
 	logging.info(driver_cmd)
 
-        proc = subprocess.Popen(driver_cmd, stdout=subprocess.PIPE, shell=True, cwd=driver_path)
-        (out, err) = proc.communicate()
-        print "program output:", out
-        print "program error:", err
-        print proc.returncode
+	proc = subprocess.Popen(driver_cmd, stdout=subprocess.PIPE, shell=True, cwd=driver_path)
+	(out, err) = proc.communicate()
+	print "program output:", out
+	print "program error:", err
+	print proc.returncode
 
-        return proc.returncode
-
+	return proc.returncode
 
 def fix_permissions_linux():
 	os.system("pkexec gpasswd -a " + os.getlogin() + " $(ls -l /dev/* | grep /dev/ttyS0 | cut -d ' ' -f 5)")
@@ -193,15 +194,15 @@ def check_ports():
                 return check_ports_posix()
 
 def flash_arduino(cpu, ptc, prt, bad, binary):
-        print "flashing arduino"
+	print "flashing arduino"
 
-        if platform.system() == "Windows":
-                bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender/avrdudes/" + platform.system()
-        else:
-                bash_shell_path = os.getcwd() + "/codebender/avrdudes/" + platform.system()
-        bash_shell_cnf = " -Cavrdude.conf"
-
-	bash_shell_cmd =  "avrdude"
+	if platform.system() == "Windows":
+		bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender/avrdudes/" + platform.system()
+		bash_shell_cmd =  "avrdude"
+	else:
+		bash_shell_path = os.getcwd() + "/avrdudes/" + platform.system()
+		bash_shell_cmd =  "./avrdude"
+	bash_shell_cnf = " -Cavrdude.conf"
 
 	#TODO: Check about verbose options and speed
 	# bash_shell_vbz = " -v -v -v -v"
@@ -225,18 +226,18 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 	logging.info(bash_shell_path)
 	logging.info("Flashing cmd:")
 	logging.info(bash_shell)
-        proc = subprocess.Popen(bash_shell, stdout=subprocess.PIPE, shell=True, cwd=bash_shell_path)
-        (out, err) = proc.communicate()
-        print "program output:\n", out
-        print "program error:\n", err
+	proc = subprocess.Popen(bash_shell, stdout=subprocess.PIPE, shell=True, cwd=bash_shell_path)
+	(out, err) = proc.communicate()
+	print "program output:\n", out
+	print "program error:\n", err
 
-        print proc.returncode
+	print proc.returncode
 	os.unlink(bin_file.name)
 	return proc.returncode
 
 def flash(websocket, cpu, ptc, prt, bad, binary):
-        flash_val = flash_arduino(cpu, ptc, prt, bad, binary)
-        websocket.sendMessage(json.dumps({"type":"flashing_output", "retval":flash_val}))
+	flash_val = flash_arduino(cpu, ptc, prt, bad, binary)
+	websocket.sendMessage(json.dumps({"type":"flashing_output", "retval":flash_val}))
 
 def do_flash(websocket, cpu, ptc, prt, bad, binary):
 	# Create a thread as follows
