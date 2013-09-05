@@ -507,6 +507,21 @@ class WebSerialProtocol(WebSocketServerProtocol):
 
 log.startLogging(sys.stdout)
 
+def main():
+	#initializing serial flashing etc utilities socket
+	ServerFactory = BroadcastServerFactory
+
+	factory = ServerFactory("ws://localhost:9000")
+	# factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
+	factory.protocol = EchoServerProtocol
+	listenWS(factory)
+
+	factory2 = WebSocketServerFactory("ws://localhost:9001")
+	factory2.protocol = WebSerialProtocol
+	listenWS(factory2)
+
+	reactor.run()
+
 
 '''
  Original windows service code:
@@ -536,21 +551,6 @@ import win32evtlogutil
 import os
 
 #import win32traceutil
-
-def main():
-      #initializing serial flashing etc utilities socket
-      ServerFactory = BroadcastServerFactory
-
-      factory = ServerFactory("ws://localhost:9000")
-      # factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
-      factory.protocol = EchoServerProtocol
-      listenWS(factory)
-
-      factory2 = WebSocketServerFactory("ws://localhost:9001")
-      factory2.protocol = WebSerialProtocol
-      listenWS(factory2)
-
-      reactor.run()
 
 
 def checkForStop(self):

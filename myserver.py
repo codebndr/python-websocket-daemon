@@ -503,11 +503,7 @@ class WebSerialProtocol(WebSocketServerProtocol):
 
 log.startLogging(sys.stdout)
 
-
-
-# ?
-if __name__ == '__main__':
-
+def main():
 	#initializing serial flashing etc utilities socket
 	ServerFactory = BroadcastServerFactory
 
@@ -521,3 +517,8 @@ if __name__ == '__main__':
 	listenWS(factory2)
 
 	reactor.run()
+
+
+# ?
+if __name__ == '__main__':
+	main()
