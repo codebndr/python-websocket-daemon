@@ -103,7 +103,18 @@ def check_drivers(websocket):
 
 
 def install_drivers_osx():
-	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg drivers/Darwin/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")	
+	frozen = getattr(sys, 'frozen', '')
+	if frozen == "macosx_app":
+		path =  os.getcwd() + """/"""
+		print "changing permissions: " + "chmod +x " + os.getcwd() + "/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/Contents/Packages/ftdiusbserialdriverinstallerPostflight.pkg/Contents/Resources/postflight"
+		os.system("chmod +x " + os.getcwd() + "/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/Contents/Packages/ftdiusbserialdriverinstallerPostflight.pkg/Contents/Resources/postflight")
+
+		print "changing permissions: " + "chmod +x " + os.getcwd() + "/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/Contents/Packages/ftdiusbserialdriverinstallerPreflight.pkg/Contents/Resources/preflight"
+		os.system("chmod +x " + os.getcwd() + "/FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/Contents/Packages/ftdiusbserialdriverinstallerPreflight.pkg/Contents/Resources/preflight")
+	else:
+		path = """drivers/Darwin/"""
+
+	return os.system("""osascript -e 'do shell script "/usr/sbin/installer -pkg """ + path + """FTDIUSBSerialDriver_10_4_10_5_10_6_10_7.mpkg/ -target /" with administrator privileges'""")
 
 def install_drivers_windows():
 	print "installing drivers"
@@ -204,7 +215,13 @@ def flash_arduino(cpu, ptc, prt, bad, binary):
 		bash_shell_path = os.environ['PROGRAMFILES'] + "\codebender/avrdudes/" + platform.system()
 		bash_shell_cmd =  "avrdude"
 	else:
-		bash_shell_path = os.getcwd() + "/avrdudes/" + platform.system()
+		frozen = getattr(sys, 'frozen', '')
+		if frozen == "macosx_app":
+			bash_shell_path = os.getcwd()
+			print "changing permissions: " + "chmod o+x " + os.getcwd() + "/avrdude"
+			os.system("chmod +x " + os.getcwd() + "/avrdude")
+		else:
+			bash_shell_path = os.getcwd() + "/avrdudes/" + platform.system()
 		bash_shell_cmd =  "./avrdude"
 	bash_shell_cnf = " -Cavrdude.conf"
 
