@@ -1,4 +1,4 @@
-port sys
+import sys
 import logging
 
 import os
