@@ -11,6 +11,7 @@ import threading
 #needed for py2exe
 import zope.interface
 from twisted.internet import reactor
+from twisted.internet import error
 from twisted.python import log
 
 #needed for py2exe
@@ -508,19 +509,23 @@ class WebSerialProtocol(WebSocketServerProtocol):
 log.startLogging(sys.stdout)
 
 def main():
-	#initializing serial flashing etc utilities socket
-	ServerFactory = BroadcastServerFactory
+	try:
+		#initializing serial flashing etc utilities socket
+		ServerFactory = BroadcastServerFactory
 
-	factory = ServerFactory("ws://localhost:9000")
-	# factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
-	factory.protocol = EchoServerProtocol
-	listenWS(factory)
+		factory = ServerFactory("ws://localhost:9000")
+		# factory = WebSocketServerFactory("ws://localhost:9000", debug = False)
+		factory.protocol = EchoServerProtocol
+		listenWS(factory)
 
-	factory2 = WebSocketServerFactory("ws://localhost:9001")
-	factory2.protocol = WebSerialProtocol
-	listenWS(factory2)
+		factory2 = WebSocketServerFactory("ws://localhost:9001")
+		factory2.protocol = WebSerialProtocol
+		listenWS(factory2)
 
-	reactor.run()
+		reactor.run()
+	except error.CannotListenError, e:
+		print "Port is already used. Exiting..."
+		os._exit(0)
 
 
 '''
