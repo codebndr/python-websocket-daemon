@@ -55,7 +55,7 @@ def check_drivers_osx(websocket):
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
 
 def check_drivers_windows(websocket):
-	if(os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_f13cf06b4049adb5/arduino.inf")):
+	if(os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_neutral_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_x86_f13cf06b4049adb5/arduino.inf") or os.path.exists("C:\Windows/System32/DriverStore/FileRepository/arduino.inf_amd64_f13cf06b4049adb5/arduino.inf") || os.path.exists("C:\WINDOWS\system32\DRVSTORE\arduino_E88635FB3CBA9E52CE0329739999DD9BEEC7B632\arduino.inf")):
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":True}))
 	else:
 		websocket.sendMessage(json.dumps({"type":"check_drivers","installed":False}))
