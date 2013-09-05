@@ -124,11 +124,11 @@ File /r dist\*
 
 ${GetWindowsVersion} $R0
 
-StrCmp $R0 "XF" isxp isnotxp
+StrCmp $R0 "XP" isxp isnotxp
 isxp:
 ; Install Windows Visual Studio 2008 Runtime (includes the .dlls py2exe needs)
-MessageBox MB_OK "Windows XP detected"
-; ExecWait '"$INSTDIR\vcredist_x86.exe" /q'
+;MessageBox MB_OK "Windows XP detected"
+ExecWait '"$INSTDIR\vcredist_x86.exe" /q'
 isnotxp:
 
 !include x64.nsh

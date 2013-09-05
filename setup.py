@@ -18,7 +18,8 @@ my_data_files = [('avrdudes/Windows', ['avrdudes/Windows/avrdude.conf']),
                 ('drivers/Windows', ['drivers/Windows/arduino.cat']),
                 ('drivers/Windows', ['drivers/Windows/arduino.inf']),
                 ('drivers/Windows', ['drivers/Windows/dpinst-x86.exe']),
-                ('drivers/Windows', ['drivers/Windows/dpinst-amd64.exe'])]
+                ('drivers/Windows', ['drivers/Windows/dpinst-amd64.exe']),
+                ('vcredist_x86.exe')]
 
 myservice = Target(
     description = 'codebender',
