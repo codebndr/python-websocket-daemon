@@ -109,7 +109,7 @@
         function connect() {
 			if(sock2 == null)
 			{
-				var msg = {"type":"set_serial","port":serial_select.options[serial_select.selectedIndex].value, "baudrate":serial_baud.selectedOptions[0].text};
+				var msg = {"type":"set_serial","port":serial_select.options[serial_select.selectedIndex].value, "baudrate":serial_baud.options[serial_baud.selectedIndex].value};
 	           sock.send(JSON.stringify(msg));
 
 				sock2 = new WebSocket(wsuri2);
