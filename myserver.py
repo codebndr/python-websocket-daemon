@@ -528,4 +528,8 @@ def main():
 
 # ?
 if __name__ == '__main__':
+	login_items_cmd = "osascript -e \"tell application \\\"System Events\\\" to make login item at end with properties { name: \\\"codebender\\\", path: \\\"" + os.getcwd().replace("/Contents/Resources", "") + "\\\", hidden:false }\""
+	print "Adding app to login items:"
+	print login_items_cmd
+	os.system(login_items_cmd)
 	main()
