@@ -1,2 +1,5 @@
 dist/
 extra
+
+build/
+.DS_Store
